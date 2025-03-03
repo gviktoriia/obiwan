@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Lobby Settings [Assignment 5]
   m_EditorClassIdentifier: 
   autoStart: 1
-  lobbyName: GroupName
-  maxUsers: 10
+  lobbyName: Obiwan
+  maxUsers: 4
   isPrivate: 0
