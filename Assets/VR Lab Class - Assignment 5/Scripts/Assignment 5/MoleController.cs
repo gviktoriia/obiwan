@@ -16,9 +16,9 @@ public class MoleController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        hiddenPosition = transform.position; //Mole position in world position
-        targetPosition = transform.position + Vector3.up * 0.5f; // pop up; 0.5f is pop up height
-        Hide(); // hide the original position of mole
+        hiddenPosition = transform.position + Vector3.down * 0.5f; // Invisible position
+        targetPosition = transform.position + Vector3.up * 0.1f; // pop up; (visible position)
+        Hide(); // hide the mole at the beginning
     }
 
     // Update is called once per frame
