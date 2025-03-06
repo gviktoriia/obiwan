@@ -512,7 +512,7 @@ GameObject:
   - component: {fileID: 7422848477339600865}
   m_Layer: 0
   m_Name: Mole
-  m_TagString: Untagged
+  m_TagString: Mole
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -602,7 +602,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   popUpSpeed: 5
   hideSpeed: 5
-  stayDuration: 1
+  stayDuration: 3
+  isActive: 0
 --- !u!1 &8843883821262796863
 GameObject:
   m_ObjectHideFlags: 0

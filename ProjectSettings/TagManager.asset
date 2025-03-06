@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - Peer
+  - Hammer
+  - Mole
   layers:
   - Default
   - TransparentFX
@@ -12,9 +14,9 @@ TagManager:
   - CameraIgnore
   - Water
   - UI
-  - 
-  - 
-  - 
+  - HandCollider
+  - Interactable
+  - Hammer
   - 
   - 
   - 

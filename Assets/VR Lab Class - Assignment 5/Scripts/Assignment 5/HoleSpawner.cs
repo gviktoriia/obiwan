@@ -10,6 +10,7 @@ public class HoleSpawner : MonoBehaviour
     public float maxSpawnInterval = 3f; // Максимальний інтервал між появами кротів
 
     private List<MoleController> moles = new List<MoleController>();
+    private bool isSpawing = false;
 
     void Start()
     {
@@ -34,9 +35,33 @@ public class HoleSpawner : MonoBehaviour
         {
             yield return new WaitForSeconds(Random.Range(minSpawnInterval, maxSpawnInterval));
 
-            // Вибираємо випадкову дірку для появи крота
-            int randomIndex = Random.Range(0, moles.Count);
-            moles[randomIndex].PopUp();
+            bool hasActiveMole = false;
+            foreach(MoleController mole in moles)
+            {
+                if (mole.isActive)
+                {
+                    hasActiveMole = true;
+                    break;
+                }
+            }
+
+            if (!hasActiveMole)
+            {
+                List<int> availableIndices = new List<int>();
+                for (int i = 0; i < moles.Count; i++)
+                {
+                    if (!moles[i].isActive)
+                    {
+                        availableIndices.Add(i);
+                    }
+                }
+
+                if (availableIndices.Count > 0)
+                {
+                    int randomIndex = availableIndices[Random.Range(0, availableIndices.Count)];
+                    moles[randomIndex].PopUp();
+                }
+            }
         }
     }
 }

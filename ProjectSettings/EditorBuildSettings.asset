@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/VR Lab Class - Assignment 5/Scenes/Start Menu.unity
     guid: 98a805120ac5b4a4db95469551270f47
   - enabled: 1

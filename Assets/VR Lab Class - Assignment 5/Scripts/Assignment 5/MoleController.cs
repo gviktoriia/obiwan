@@ -7,11 +7,11 @@ public class MoleController : MonoBehaviour
 {
     public float popUpSpeed = 5f; //mole pop up
     public float hideSpeed = 5f; //mole back
-    public float stayDuration = 1f; //stay time
+    public float stayDuration = 12f; //stay time
 
     private Vector3 hiddenPosition; //mole original hidden position
     private Vector3 targetPosition; //mole out position
-    private bool isActive = false;
+    public bool isActive = false;
     
     // Start is called before the first frame update
     void Start()
@@ -46,7 +46,7 @@ public class MoleController : MonoBehaviour
         StartCoroutine(MoveTo(hiddenPosition,hideSpeed));
     }
 
-    System.Collections.IEnumerator MoveTo(Vector3 target, float speed) // Enumerator make it moves like animation
+    IEnumerator MoveTo(Vector3 target, float speed) // Enumerator make it moves like animation
     {
         while (Vector3.Distance(transform.position, target) > 0.01f)
         {
@@ -55,7 +55,7 @@ public class MoleController : MonoBehaviour
         }
     }
 
-    System.Collections.IEnumerator HideAfterDelay()
+    IEnumerator HideAfterDelay()
     {
         yield return new WaitForSeconds(stayDuration);
         Hide();
