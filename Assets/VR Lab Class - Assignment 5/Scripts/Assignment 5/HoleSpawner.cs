@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
-public class HoleSpawner : MonoBehaviour
+public class HoleSpawner : NetworkBehaviour
 {
     public GameObject molePrefab; // Префаб крота
     public Transform[] spawnPoints; // Масив точок, де можуть з'являтися кроти
@@ -62,6 +63,14 @@ public class HoleSpawner : MonoBehaviour
                     moles[randomIndex].PopUp();
                 }
             }
+        }
+    }
+    public override void OnNetworkSpawn()
+    {
+        if (IsServer)
+        {
+            GameObject mole = Instantiate(molePrefab, transform.position, Quaternion.identity);
+            mole.GetComponent<NetworkObject>().Spawn();
         }
     }
 }

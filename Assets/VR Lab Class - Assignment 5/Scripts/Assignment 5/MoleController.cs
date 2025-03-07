@@ -2,9 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Build.Content;
 using UnityEngine;
+using Unity.Netcode;
 
-public class MoleController : MonoBehaviour
+public class MoleController : NetworkBehaviour
 {
+    //Network Variable
+    public NetworkVariable<bool> IsActive = new NetworkVariable<bool>();
+    public NetworkVariable<ulong> OwnerClientID = new NetworkVariable<ulong>();
+
+
     public float popUpSpeed = 5f; //mole pop up
     public float hideSpeed = 5f; //mole back
     public float stayDuration = 12f; //stay time
@@ -65,5 +71,39 @@ public class MoleController : MonoBehaviour
     public void OnHit()
     {
         Hide();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        IsActive.OnValueChanged += OnActiveStateChanged;
+    }
+
+    private void OnActiveStateChanged(bool oldValue, bool newValue)
+    {
+        if (newValue)
+            PopUp(); // To Show mole on every user
+        else
+            Hide();
+    }
+
+    [ServerRpc]
+    public void PopUpServerRpc()
+    {
+        if (!IsActive.Value)
+        {
+            IsActive.Value = true;
+            // if nobody plays
+        }
+    }
+
+    [ServerRpc]
+    public void HitServerRpc(ulong hitterClientId)
+    {
+        if (IsActive.Value)
+        {
+            IsActive.Value = false;
+            // add score to visible to all user
+            //GameManager.Instance.AddScore(hitterClientId, 10);
+        }
     }
 }

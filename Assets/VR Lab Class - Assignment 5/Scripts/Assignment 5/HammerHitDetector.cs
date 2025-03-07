@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
+using Unity.Netcode;
 
-public class HammerHitDetector : MonoBehaviour
+public class HammerHitDetector : NetworkBehaviour
 {
     [Header("Settings")]
     public int hitScore = 10;        // The scores user get for hit 1 mole successfully
@@ -20,6 +21,7 @@ public class HammerHitDetector : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        
         // To Check whether hit a hole
         if (other.CompareTag("Mole"))
         {
