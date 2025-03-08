@@ -1,76 +1,64 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
 public class HoleSpawner : NetworkBehaviour
 {
-    public GameObject molePrefab; // Префаб крота
-    public Transform[] spawnPoints; // Масив точок, де можуть з'являтися кроти
-    public float minSpawnInterval = 1f; // Мінімальний інтервал між появами кротів
-    public float maxSpawnInterval = 3f; // Максимальний інтервал між появами кротів
+    public GameObject molePrefab;
+    public Transform[] spawnPoints;
 
-    private List<MoleController> moles = new List<MoleController>();
-    private bool isSpawing = false;
+    private MoleController[] moles;
 
-    void Start()
-    {
-        // Створюємо кротів для кожної дірки
-        foreach (Transform spawnPoint in spawnPoints)
-        {
-            GameObject mole = Instantiate(molePrefab, spawnPoint.position, spawnPoint.rotation);
-            mole.transform.SetParent(spawnPoint);
-            MoleController moleController = mole.GetComponent<MoleController>();
-            moles.Add(moleController);
-
-            moleController.Hide();
-        }
-
-        // Запускаємо корутину для випадкової появи кротів
-        StartCoroutine(SpawnMoles());
-    }
-
-    IEnumerator SpawnMoles()
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(Random.Range(minSpawnInterval, maxSpawnInterval));
-
-            bool hasActiveMole = false;
-            foreach(MoleController mole in moles)
-            {
-                if (mole.isActive)
-                {
-                    hasActiveMole = true;
-                    break;
-                }
-            }
-
-            if (!hasActiveMole)
-            {
-                List<int> availableIndices = new List<int>();
-                for (int i = 0; i < moles.Count; i++)
-                {
-                    if (!moles[i].isActive)
-                    {
-                        availableIndices.Add(i);
-                    }
-                }
-
-                if (availableIndices.Count > 0)
-                {
-                    int randomIndex = availableIndices[Random.Range(0, availableIndices.Count)];
-                    moles[randomIndex].PopUp();
-                }
-            }
-        }
-    }
     public override void OnNetworkSpawn()
     {
         if (IsServer)
         {
-            GameObject mole = Instantiate(molePrefab, transform.position, Quaternion.identity);
+            InitializeMoles();
+            StartCoroutine(SpawnMoles());
+        }
+    }
+
+    void InitializeMoles()
+    {
+        moles = new MoleController[spawnPoints.Length];
+        for (int i = 0; i < spawnPoints.Length; i++)
+        {
+            GameObject mole = Instantiate(molePrefab, spawnPoints[i].position, Quaternion.identity);
             mole.GetComponent<NetworkObject>().Spawn();
+            moles[i] = mole.GetComponent<MoleController>();
+            moles[i].transform.SetParent(spawnPoints[i]);
+            moles[i].HideServerRpc();
+        }
+    }
+
+    IEnumerator SpawnMoles()
+    {
+        while (GameManager.Instance.IsGameActive.Value)
+        {
+            yield return new WaitForSeconds(GameManager.Instance.GetCurrentSpawnInterval());
+
+            if (GameManager.Instance.CurrentMode.Value == GameManager.GameMode.Easy)
+                SpawnMultipleMoles();
+            else
+                SpawnSingleMole();
+        }
+    }
+
+    void SpawnSingleMole()
+    {
+        int index = Random.Range(0, moles.Length);
+        if (!moles[index].IsActive.Value)
+            moles[index].PopUpServerRpc();
+    }
+
+    void SpawnMultipleMoles()
+    {
+        int count = Random.Range(1, GameManager.Instance.GetMaxConcurrentMoles() + 1);
+        for (int i = 0; i < count; i++)
+        {
+            int index = Random.Range(0, moles.Length);
+            if (!moles[index].IsActive.Value)
+                moles[index].PopUpServerRpc();
         }
     }
 }

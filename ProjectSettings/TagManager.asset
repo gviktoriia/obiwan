@@ -5,8 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Peer
-  - Hammer
   - Mole
+  - UIBotton
+  - HammerHead
   layers:
   - Default
   - TransparentFX
