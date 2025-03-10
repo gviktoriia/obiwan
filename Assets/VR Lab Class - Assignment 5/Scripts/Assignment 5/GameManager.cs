@@ -1,228 +1,176 @@
 ﻿using System.Collections;
-using TMPro;
-using UnityEngine;
+using System.Collections.Generic;
 using Unity.Netcode;
+using UnityEngine;
+using TMPro;
 
 public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
 
-    // 游戏难度模式
+    // 网络同步变量
+    public NetworkVariable<bool> IsGameActive = new NetworkVariable<bool>(false);
+    public NetworkVariable<float> RemainingTime = new NetworkVariable<float>(0f);
+    public NetworkVariable<GameMode> CurrentMode = new NetworkVariable<GameMode>(GameMode.Easy);
+    public NetworkVariable<int> activeMoles = new NetworkVariable<int>();
+
+    [Header("Game Elements")]
+    public Transform[] holePositions; // 拖入场景中所有地洞的位置
+    public GameObject molePrefab;     // 地鼠预制体
+
+    // 存储所有地鼠实例
+    private List<MoleController> moles = new List<MoleController>();
+
+    // 游戏设置
+    [System.Serializable]
+    public class GameSettings
+    {
+        public float easyModeDuration = 120f;
+        public float hardModeDuration = 60f;
+        public int maxEasyMoles = 3;
+        public int maxHardMoles = 1;
+    }
+    public GameSettings settings;
+
+    // UI引用
+    public TMP_Text timerText;
+    public TMP_Text scoreText;
+
     public enum GameMode { Easy, Hard }
 
-    // 网络变量：同步给所有客户端
-    public NetworkVariable<GameMode> CurrentMode = new NetworkVariable<GameMode>(GameMode.Easy);
-    public NetworkVariable<bool> IsGameActive = new NetworkVariable<bool>(false);
-    public NetworkVariable<int> TotalScore = new NetworkVariable<int>(0);
+    void Awake() => Instance = this;
 
-    [Header("Game Settings")]
-    public MoleController[] holes;     // 在Inspector手动拖拽所有地鼠进来
-    public float easySpawnInterval = 2f;
-    public float hardSpawnInterval = 1f;
-    public int easyMaxMoles = 3;       // Easy模式时，一次最多弹出的地鼠数量
-    public float moleShowDuration = 2f;// Easy模式地鼠弹出后停留时间
-
-    [Header("UI References")]
-    public TMP_Text scoreText;
-    public TMP_Text modeDisplayText;
-    public GameObject startPanel;
-    public GameObject modeSelectionPanel;
-    public GameObject inGamePanel;
-
-    private Coroutine spawnCoroutine;
-
-    private void Awake()
+    void Start()
     {
-        // 单例模式
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        base.OnNetworkSpawn();
-
-        // 当网络真正初始化后，再去更新 UI
-        UpdateAllUI();
-
-        // 监听网络变量的变化
-        CurrentMode.OnValueChanged += OnGameModeChanged;
-        TotalScore.OnValueChanged += OnScoreChanged;
-    }
-
-    private void Start()
-    {
-        // 本地初始化UI
-        InitializeGame();
-    }
-
-    private void InitializeGame()
-    {
-        // 默认显示开始面板
-        UpdateUIPanelsClientRpc(showStart: true, showInGame: false);
-        UpdateModeDisplay();
-    }
-
-    #region ========= 游戏流程控制 =========
-
-    [ServerRpc(RequireOwnership = false)]
-    public void StartGameServerRpc()
-    {
-        if (!IsGameActive.Value)
+        if (IsServer)
         {
-            IsGameActive.Value = true;
-            // 启动服务器端协程，不断随机弹地鼠
-            spawnCoroutine = StartCoroutine(SpawnMoles());
-            UpdateUIPanelsClientRpc(false, true);
+            // 服务器初始化地鼠
+            InitializeMoles();
+        }
+        // 在 GameManager.cs 的 Start 方法中添加
+
+        Debug.Log("GameManager 已初始化"); // 强制输出
+        if (holePositions == null) Debug.LogError("Hole Positions 未绑定!");
+        if (molePrefab == null) Debug.LogError("Mole Prefab 未绑定!");
+    }
+
+    // 初始化地鼠实例
+    private void InitializeMoles()
+    {
+        foreach (Transform hole in holePositions)
+        {
+            GameObject mole = Instantiate(molePrefab, hole.position, Quaternion.identity);
+            mole.GetComponent<NetworkObject>().Spawn();
+            moles.Add(mole.GetComponent<MoleController>());
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void RestartGameServerRpc()
+    // 新增地鼠生成方法
+    [ServerRpc]
+    private void TrySpawnMoleServerRpc()
     {
-        // 停止旧协程
-        if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
-        // 分数清零
-        TotalScore.Value = 0;
-        // 先隐藏所有地鼠
-        ResetAllMoles();
-        // 重新开始游戏
-        IsGameActive.Value = false;
-        StartGameServerRpc();
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    public void SetGameModeServerRpc(GameMode newMode)
-    {
-        CurrentMode.Value = newMode;
-        AdjustMoleParameters();
-    }
-
-    #endregion
-
-    #region ========= 随机弹地鼠逻辑 =========
-
-    private IEnumerator SpawnMoles()
-    {
-        while (IsGameActive.Value)
+        if (activeMoles.Value < GetMaxMoles())
         {
-            // 等待一个随机或固定的间隔
-            yield return new WaitForSeconds(GetCurrentSpawnInterval());
-
-            // 根据模式决定一次弹出单个或多个
-            if (CurrentMode.Value == GameMode.Easy)
-                SpawnMultipleMoles();
-            else
-                SpawnSingleMole();
-        }
-    }
-
-    private void SpawnSingleMole()
-    {
-        int index = Random.Range(0, holes.Length);
-        // 只对未激活的地鼠做 PopUp
-        if (!holes[index].IsActive.Value)
-        {
-            holes[index].PopUpServerRpc();
-        }
-    }
-
-    private void SpawnMultipleMoles()
-    {
-        // 在 [1, easyMaxMoles] 范围内随机出一个数量
-        int count = Random.Range(1, easyMaxMoles + 1);
-        for (int i = 0; i < count; i++)
-        {
-            int index = Random.Range(0, holes.Length);
-            if (!holes[index].IsActive.Value)
+            Debug.Log($"Try to create Moles, activeMoles are:{activeMoles.Value}");
+            List<int> availableIndices = new List<int>();
+            for (int i = 0; i < moles.Count; i++)
             {
-                holes[index].PopUpServerRpc();
+                if (!moles[i].IsActive.Value)
+                    availableIndices.Add(i);
+                    Debug.Log($"Availiable holes:{i}");
+            }
+
+            if (availableIndices.Count > 0)
+            {
+                int randomIndex = availableIndices[Random.Range(0, availableIndices.Count)];
+                moles[randomIndex].PopUpServerRpc();
+                activeMoles.Value++;
+                Debug.Log($"Moles created, activeMoles are:{activeMoles.Value}");
             }
         }
     }
 
-    private void ResetAllMoles()
+    private int GetMaxMoles()
     {
-        foreach (var mole in holes)
+        return (CurrentMode.Value == GameMode.Easy) ?
+            settings.maxEasyMoles :
+            settings.maxHardMoles;
+    }
+
+    [ServerRpc]
+    public void StartGameServerRpc(GameMode mode)
+    {
+        if (!IsGameActive.Value)
         {
-            if (mole.IsActive.Value)
-                mole.HideServerRpc();
+            CurrentMode.Value = mode;
+            IsGameActive.Value = true;
+            RemainingTime.Value = (mode == GameMode.Easy) ?
+                settings.easyModeDuration : settings.hardModeDuration;
+
+            StartCoroutine(GameTimer());
+            StartCoroutine(MoleSpawnCoroutine());
         }
     }
 
-    private void AdjustMoleParameters()
+    // 玩家分数字典（服务器端存储）
+    private Dictionary<ulong, int> playerScores = new Dictionary<ulong, int>();
+
+    // 分数同步方法
+    [ServerRpc]
+    public void AddScoreServerRpc(ulong clientId, int points)
     {
-        // 简单模式：弹出时间长
-        // 困难模式：时间缩短
-        foreach (var mole in holes)
-        {
-            if (CurrentMode.Value == GameMode.Easy)
-                mole.StayDuration.Value = moleShowDuration;
-            else
-                mole.StayDuration.Value = moleShowDuration * 0.6f;
-        }
+        if (!playerScores.ContainsKey(clientId))
+            playerScores[clientId] = 0;
+
+        playerScores[clientId] += points;
+        UpdateScoresClientRpc(clientId, playerScores[clientId]);
     }
-
-    public float GetCurrentSpawnInterval()
-    {
-        return (CurrentMode.Value == GameMode.Easy) ? easySpawnInterval : hardSpawnInterval;
-    }
-
-    #endregion
-
-    #region ========= UI 显示更新 =========
 
     [ClientRpc]
-    private void UpdateUIPanelsClientRpc(bool showStart, bool showInGame)
+    private void UpdateScoresClientRpc(ulong clientId, int newScore)
     {
-        if (startPanel != null) startPanel.SetActive(showStart);
-        if (inGamePanel != null) inGamePanel.SetActive(showInGame);
-        if (modeSelectionPanel != null) modeSelectionPanel.SetActive(false);
-
-        UpdateModeDisplay();
+        // 更新本地UI显示
+        if (clientId == NetworkManager.LocalClientId)
+        {
+            scoreText.text = $"Your Score: {newScore}";
+        }
     }
 
-    private void UpdateAllUI()
-    {
-        if (scoreText != null) scoreText.text = $"SCORE: {TotalScore.Value}";
-        UpdateModeDisplay();
+    [ServerRpc]
+    public void RestartGameServerRpc() {
+        /* 重置地鼠和分数逻辑 */
+        /* 重置地鼠和分数逻辑 */
     }
 
-    private void UpdateModeDisplay()
+    private IEnumerator GameTimer()
     {
-        if (modeDisplayText == null) return;
-        modeDisplayText.text = $"MODE: {CurrentMode.Value}";
-        modeDisplayText.color = (CurrentMode.Value == GameMode.Easy) ? Color.green : Color.red;
+        while (RemainingTime.Value > 0)
+        {
+            RemainingTime.Value -= Time.deltaTime;
+            UpdateTimerClientRpc(RemainingTime.Value);
+            yield return null;
+        }
+        EndGame();
     }
 
-    private void OnGameModeChanged(GameMode previous, GameMode current)
+    private IEnumerator MoleSpawnCoroutine()
     {
-        UpdateModeDisplay();
+        while (IsGameActive.Value)
+        {
+            TrySpawnMoleServerRpc();
+            yield return new WaitForSeconds(Random.Range(1f, 3f));
+        }
     }
 
-    private void OnScoreChanged(int previous, int current)
+    [ClientRpc]
+    private void UpdateTimerClientRpc(float time)
     {
-        if (scoreText != null)
-            scoreText.text = $"SCORE: {current}";
+        timerText.text = $"Time: {Mathf.FloorToInt(time)}s";
     }
 
-    #endregion
-
-    #region ========= 分数管理 =========
-
-    [ServerRpc(RequireOwnership = false)]
-    public void AddScoreServerRpc(int points)
+    public void EndGame()
     {
-        TotalScore.Value += points;
+        IsGameActive.Value = false;
+        // 清理逻辑
     }
-
-    public int GetMaxConcurrentMoles()
-    {
-        if (CurrentMode.Value == GameMode.Easy)
-            return easyMaxMoles; // 这可能是3
-        else
-            return 5; // 你可改成别的数字
-    }
-
-    #endregion
 }

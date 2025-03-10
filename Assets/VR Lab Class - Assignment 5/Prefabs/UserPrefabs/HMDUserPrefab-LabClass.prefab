@@ -415,6 +415,7 @@ GameObject:
   - component: {fileID: 1821412047879728882}
   - component: {fileID: 7202416083162761210}
   - component: {fileID: 6073808765629695105}
+  - component: {fileID: 4158385424393129410}
   m_Layer: 0
   m_Name: RightHand Controller
   m_TagString: Untagged
@@ -733,6 +734,75 @@ MonoBehaviour:
       m_Flags: 0
     m_Reference: {fileID: 5753362011061742477, guid: d86920191e7b0cb41a4a7e1ff8fc9a2e, type: 3}
   handCollider: {fileID: 6443458807331582636}
+--- !u!114 &4158385424393129410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4284957711837968130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2fadf230d1919748a9aa21d40f74619, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_TrackingType: 0
+  m_UpdateType: 0
+  m_IgnoreTrackingState: 0
+  m_PositionInput:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Position
+      m_Type: 0
+      m_ExpectedControlType: Vector3
+      m_Id: 7add1734-632f-4f3c-93a6-ab818a33b481
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: -6990451343241949905, guid: 266f96d8e11535e43a65a15b16b41116, type: 3}
+  m_RotationInput:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Rotation
+      m_Type: 0
+      m_ExpectedControlType: Quaternion
+      m_Id: 6b2cc204-907b-41e7-b3a4-aace95981906
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 5655099022552512499, guid: 266f96d8e11535e43a65a15b16b41116, type: 3}
+  m_TrackingStateInput:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Tracking State
+      m_Type: 0
+      m_ExpectedControlType: Integer
+      m_Id: 74f3d83a-678e-47df-bf56-8fbabb715382
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 2040072458121327234, guid: 266f96d8e11535e43a65a15b16b41116, type: 3}
+  m_PositionAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 9b9ec898-7ca2-4df7-84ff-52b52a9bd486
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
+  m_RotationAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: c008fac8-72bd-4e0b-a0d0-643625bd1fe5
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
 --- !u!1 &4833818313043802723
 GameObject:
   m_ObjectHideFlags: 0
@@ -745,6 +815,7 @@ GameObject:
   - component: {fileID: 7846704502050818674}
   - component: {fileID: 4949088410318727347}
   - component: {fileID: 7041285174267915437}
+  - component: {fileID: 4664804569332732623}
   m_Layer: 0
   m_Name: LeftHand Controller
   m_TagString: Untagged
@@ -1063,6 +1134,75 @@ MonoBehaviour:
       m_Flags: 0
     m_Reference: {fileID: -1890215569660454860, guid: d86920191e7b0cb41a4a7e1ff8fc9a2e, type: 3}
   handCollider: {fileID: 6558260563619304615}
+--- !u!114 &4664804569332732623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4833818313043802723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2fadf230d1919748a9aa21d40f74619, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_TrackingType: 0
+  m_UpdateType: 0
+  m_IgnoreTrackingState: 0
+  m_PositionInput:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Position
+      m_Type: 0
+      m_ExpectedControlType: Vector3
+      m_Id: 0ee8ddd1-edf2-4d12-b41b-c4e71c4a8908
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: -6134421591408814843, guid: 266f96d8e11535e43a65a15b16b41116, type: 3}
+  m_RotationInput:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Rotation
+      m_Type: 0
+      m_ExpectedControlType: Quaternion
+      m_Id: 37e1bb1d-93f0-4514-a63a-a903983dac9a
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: -5826256404958620777, guid: 266f96d8e11535e43a65a15b16b41116, type: 3}
+  m_TrackingStateInput:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Tracking State
+      m_Type: 0
+      m_ExpectedControlType: Integer
+      m_Id: 94b2517d-5aca-4dc2-b350-817c7551dd19
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: -904268171654941738, guid: 266f96d8e11535e43a65a15b16b41116, type: 3}
+  m_PositionAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: c538e25f-5117-49fa-882e-1b5403d33668
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
+  m_RotationAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 3bd9b6b4-98d5-4660-add0-5eb885deec18
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
 --- !u!1 &7216047632962128736
 GameObject:
   m_ObjectHideFlags: 0
@@ -1173,7 +1313,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 247
+    m_Bits: 1019
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -1316,6 +1456,7 @@ GameObject:
   - component: {fileID: 5773340341098818946}
   - component: {fileID: 9029850245739658440}
   - component: {fileID: 3359338612747561171}
+  - component: {fileID: 8367897151473190222}
   m_Layer: 0
   m_Name: HMDUserPrefab-LabClass
   m_TagString: Untagged
@@ -1517,6 +1658,27 @@ MonoBehaviour:
   - {fileID: 4044103621818419516}
   - {fileID: 1249802004885907995}
   recurseChildren: 1
+--- !u!114 &8367897151473190222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7216047633976425198}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98fc22ce492a94147921e0c236c2eb23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inputMapping: 1
+  head: {fileID: 0}
+  steeringAction: {fileID: 1368376428903156982, guid: d86920191e7b0cb41a4a7e1ff8fc9a2e, type: 3}
+  rotationAction: {fileID: 4602077799313843101, guid: d86920191e7b0cb41a4a7e1ff8fc9a2e, type: 3}
+  steeringSpeed: 2
+  rotationSpeed: 1
+  groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 512
 --- !u!1 &7216047634103647853
 GameObject:
   m_ObjectHideFlags: 0
@@ -1542,7 +1704,7 @@ Transform:
   m_GameObject: {fileID: 7216047634103647853}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 0, y: 0, z: 5}
+  m_LocalPosition: {x: 0, y: 0, z: 4.85}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

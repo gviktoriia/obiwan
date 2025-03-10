@@ -1,111 +1,113 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEditor.Build.Content;
 using UnityEngine;
 using Unity.Netcode;
+using static GameManager;
 
 public class MoleController : NetworkBehaviour
 {
-    /// <summary>
-    /// 是否激活状态（是否“顶出来”），由服务器控制，所有客户端可读
-    /// </summary>
-    public NetworkVariable<bool> IsActive = new NetworkVariable<bool>( );
+    //Network Variable
+    public NetworkVariable<bool> IsActive = new NetworkVariable<bool>();
+    public NetworkVariable<ulong> OwnerClientID = new NetworkVariable<ulong>();
 
-    /// <summary>
-    /// 地鼠在地面上停留的时间（可在 easy/hard 模式下动态修改）
-    /// </summary>
-    public NetworkVariable<float> StayDuration = new NetworkVariable<float>(
-        2f
-    );
 
-    [Header("Visual Settings")]
-    public float popUpSpeed = 5f;  // 弹出速度
-    public float hideSpeed = 5f;   // 回退速度
+    public float popUpSpeed = 5f; //mole pop up
+    public float hideSpeed = 5f; //mole back
+    public float stayDuration = 12f; //stay time
 
-    private Vector3 hiddenPos;     // 地鼠初始下方位置
-    private Vector3 visiblePos;    // 地鼠顶出后的位置
-    private Coroutine moveCoroutine;
-
-    private void Awake()
+    private Vector3 hiddenPosition; //mole original hidden position
+    private Vector3 targetPosition; //mole out position
+    public bool isActive = false;
+    
+    // Start is called before the first frame update
+    void Start()
     {
-        // 计算上下两种位置
-        hiddenPos = transform.position + Vector3.down * 0.5f;
-        visiblePos = transform.position + Vector3.up * 0.1f;
-
-        // 初始化时先隐藏在下方
-        transform.position = hiddenPos;
+        hiddenPosition = transform.position + Vector3.down * 0.5f; // Invisible position
+        targetPosition = transform.position + Vector3.up * 0.1f; // pop up; (visible position)
+        Hide(); // hide the mole at the beginning
     }
 
-    public override void OnNetworkSpawn()
+    // Update is called once per frame
+    void Update()
     {
-        base.OnNetworkSpawn();
-        IsActive.Value = false;
+        
+    }
 
-        // 当 IsActive 值发生变化时，所有客户端都执行对应动画
-        IsActive.OnValueChanged += (oldVal, newVal) =>
+    public void PopUp()
+    {
+        if (isActive)
         {
-            if (newVal) // 变为 true，弹出来
-            {
-                if (moveCoroutine != null) StopCoroutine(moveCoroutine);
-                moveCoroutine = StartCoroutine(MoveTo(visiblePos, popUpSpeed));
-
-                // 服务器端再启动一个“StayDuration”后隐藏的协程
-                if (IsServer)
-                {
-                    StartCoroutine(HideAfterDelay(StayDuration.Value));
-                }
-            }
-            else // 变为 false，隐藏回去
-            {
-                if (moveCoroutine != null) StopCoroutine(moveCoroutine);
-                moveCoroutine = StartCoroutine(MoveTo(hiddenPos, hideSpeed));
-            }
-        };
+            return;
+        }
+        isActive = true;
+        StopAllCoroutines();
+        StartCoroutine(MoveTo(targetPosition, popUpSpeed));
+        StartCoroutine(HideAfterDelay());
     }
 
-    // 使用协程来平滑移动到目标位置
-    private IEnumerator MoveTo(Vector3 target, float speed)
+    public void Hide()
     {
-        while (Vector3.Distance(transform.position, target) > 0.001f)
+        isActive = false;
+        StopAllCoroutines();
+        StartCoroutine(MoveTo(hiddenPosition,hideSpeed));
+    }
+
+    IEnumerator MoveTo(Vector3 target, float speed) // Enumerator make it moves like animation
+    {
+        while (Vector3.Distance(transform.position, target) > 0.01f)
         {
             transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
             yield return null;
         }
     }
 
-    // 停留一定时间后自动回到隐藏状态
-    private IEnumerator HideAfterDelay(float delay)
+    IEnumerator HideAfterDelay()
     {
-        yield return new WaitForSeconds(delay);
-        if (IsActive.Value)
-            IsActive.Value = false;
+        yield return new WaitForSeconds(stayDuration);
+        Hide();
     }
 
-    // 让服务器端弹出地鼠
+    //When hit
+    public void OnHit()
+    {
+        Hide();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        IsActive.OnValueChanged += OnActiveStateChanged;
+    }
+
+    private void OnActiveStateChanged(bool oldValue, bool newValue)
+    {
+        if (newValue)
+            PopUp(); // To Show mole on every user
+        else
+            Hide();
+    }
+
     [ServerRpc]
     public void PopUpServerRpc()
     {
         if (!IsActive.Value)
         {
             IsActive.Value = true;
+            // if nobody plays
+            GameManager.Instance.activeMoles.Value++;
         }
     }
 
-    // 让服务器端隐藏地鼠
     [ServerRpc]
-    public void HideServerRpc()
+    public void HitServerRpc(ulong hitterClientId)
     {
         if (IsActive.Value)
         {
             IsActive.Value = false;
-        }
-    }
-
-    // 当被击中时，让服务器端把地鼠设为隐藏
-    [ServerRpc(RequireOwnership = false)]
-    public void OnHitServerRpc()
-    {
-        if (IsActive.Value)
-        {
-            IsActive.Value = false;
+            // add score to visible to all user
+            GameManager.Instance.activeMoles.Value--;
+            GameManager.Instance.AddScoreServerRpc(hitterClientId, 10);
+            Debug.Log($"Moles hided, activeMoles are:{GameManager.Instance.activeMoles.Value}");
         }
     }
 }
