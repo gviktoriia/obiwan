@@ -7,8 +7,8 @@ using VRSYS.Core.Networking;
 
 public class StartButtonController : NetworkBehaviour
 {
-    public AudioClip hitSound;
-    public ParticleSystem hitEffect;
+    //public AudioClip hitSound;
+    //public ParticleSystem hitEffect;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -46,41 +46,41 @@ public class StartButtonController : NetworkBehaviour
         {
             Debug.Log("[Server] Starting game...");
             GameManager.Instance.StartGameServerRpc(GameManager.GameMode.Easy);
-            PlayEffectsClientRpc();
+            //PlayEffectsClientRpc();
         }
     }
 
-    [ClientRpc]
-    private void PlayEffectsClientRpc()
-    {
-        // 本地音效和粒子效果
-        GetComponent<AudioSource>().PlayOneShot(hitSound);
-        hitEffect.Play();
+    //[ClientRpc]
+    //private void PlayEffectsClientRpc()
+    //{
+    //    // 本地音效和粒子效果
+    //    GetComponent<AudioSource>().PlayOneShot(hitSound);
+    //    hitEffect.Play();
 
-        // 本地触觉反馈（在所有客户端触发自己手柄的震动）
-        TriggerLocalHapticFeedback();
-    }
+    //    // 本地触觉反馈（在所有客户端触发自己手柄的震动）
+    //    TriggerLocalHapticFeedback();
+    //}
 
-    private void TriggerLocalHapticFeedback()
-    {
-        // 获取所有活动手柄设备
-        var inputDevices = new List<InputDevice>();
-        InputDevices.GetDevicesWithCharacteristics(
-            InputDeviceCharacteristics.Controller |
-            InputDeviceCharacteristics.HeldInHand,
-            inputDevices);
+    //private void TriggerLocalHapticFeedback()
+    //{
+    //    // 获取所有活动手柄设备
+    //    var inputDevices = new List<InputDevice>();
+    //    InputDevices.GetDevicesWithCharacteristics(
+    //        InputDeviceCharacteristics.Controller |
+    //        InputDeviceCharacteristics.HeldInHand,
+    //        inputDevices);
 
-        foreach (var device in inputDevices)
-        {
-            if (device.isValid)
-            {
-                // 发送震动脉冲（0.5强度，0.2秒）
-                if (device.TryGetHapticCapabilities(out HapticCapabilities capabilities) &&
-                    capabilities.supportsImpulse)
-                {
-                    device.SendHapticImpulse(0, 0.5f, 0.2f);
-                }
-            }
-        }
-    }
+    //    foreach (var device in inputDevices)
+    //    {
+    //        if (device.isValid)
+    //        {
+    //            // 发送震动脉冲（0.5强度，0.2秒）
+    //            if (device.TryGetHapticCapabilities(out HapticCapabilities capabilities) &&
+    //                capabilities.supportsImpulse)
+    //            {
+    //                device.SendHapticImpulse(0, 0.5f, 0.2f);
+    //            }
+    //        }
+    //    }
+    //}
 }

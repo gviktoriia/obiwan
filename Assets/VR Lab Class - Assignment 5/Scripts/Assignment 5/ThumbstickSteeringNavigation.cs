@@ -1,10 +1,11 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 namespace Assignment3.SampleSolution
 {
-    public class ThumbstickSteeringNavigation : MonoBehaviour
+    public class ThumbstickSteeringNavigation : NetworkBehaviour
     {
         public enum InputMapping
         {
@@ -45,9 +46,16 @@ namespace Assignment3.SampleSolution
 
         void Update()
         {
+            if (!IsOwner) return;
             ApplyDisplacement();
             ApplyRotation();
             ApplyGroundfollowing();
+        }
+
+        [ServerRpc]
+        private void UpdatePositionServerRpc(Vector3 newPosition)
+        {
+            transform.position = newPosition;
         }
 
         private void ApplyDisplacement()

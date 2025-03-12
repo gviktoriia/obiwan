@@ -5,7 +5,7 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - head: {instanceID: 0}
-  - steeringAction: {fileID: 6353935896786458472, guid: 266f96d8e11535e43a65a15b16b41116, type: 3}
+  - steeringAction: {instanceID: 0}
   - rotationAction: {fileID: 4602077799313843101, guid: d86920191e7b0cb41a4a7e1ff8fc9a2e, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}

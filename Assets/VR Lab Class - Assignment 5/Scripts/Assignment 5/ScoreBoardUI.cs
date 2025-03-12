@@ -12,7 +12,7 @@ public class ScoreboardUI : NetworkBehaviour
     void Update()
     {
         // 更新倒计时
-        timerText.text = $"Time: {Mathf.FloorToInt(GameManager.Instance.RemainingTime.Value)}s";
+         //timerText.text = $"Time: {Mathf.FloorToInt(GameManager.Instance.RemainingTime.Value)}s";
 
         // 更新玩家分数（需扩展玩家数据存储）
         /* foreach (var player in PlayerManager.Players)

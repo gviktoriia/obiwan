@@ -25,8 +25,9 @@ public class GameManager : NetworkBehaviour
     [System.Serializable]
     public class GameSettings
     {
-        public float easyModeDuration = 120f;
-        public float hardModeDuration = 60f;
+        public float gameDuration = 60f;
+        public float easyMoleStayDuration = 2f;
+        public float hardMoleStayDuration = 0.5f;
         public int maxEasyMoles = 3;
         public int maxHardMoles = 1;
     }
@@ -42,16 +43,29 @@ public class GameManager : NetworkBehaviour
 
     void Start()
     {
+        Debug.Log("[GameManager] Start method called.");
+        Debug.Log($"[GameManager] IsServer = {IsServer}");
+
+    }
+
+    public override void OnNetworkSpawn()
+    {
         if (IsServer)
         {
+            Debug.Log("[GameManager] Initializing moles on server....");
             // 服务器初始化地鼠
             InitializeMoles();
         }
-        // 在 GameManager.cs 的 Start 方法中添加
+        else
+        {
+            Debug.Log("This instance is running as a client.");
+            // 在客户端上执行的初始化逻辑
+        }
 
         Debug.Log("GameManager 已初始化"); // 强制输出
-        if (holePositions == null) Debug.LogError("Hole Positions 未绑定!");
-        if (molePrefab == null) Debug.LogError("Mole Prefab 未绑定!");
+        if (holePositions == null) Debug.LogError("Hole Positions are null 未绑定!");
+        if (molePrefab == null) Debug.LogError("Mole Prefab is null 未绑定!");
+
     }
 
     // 初始化地鼠实例
@@ -59,9 +73,10 @@ public class GameManager : NetworkBehaviour
     {
         foreach (Transform hole in holePositions)
         {
-            GameObject mole = Instantiate(molePrefab, hole.position, Quaternion.identity);
+            GameObject mole = Instantiate(molePrefab, hole.position, Quaternion.Euler(-90, 0, 0));
             mole.GetComponent<NetworkObject>().Spawn();
             moles.Add(mole.GetComponent<MoleController>());
+            Debug.Log($"[GameManager] Mole instantiated at {hole.position}, NetworkObject spawned: {mole.GetComponent<NetworkObject>().IsSpawned}");
         }
     }
 
@@ -69,24 +84,37 @@ public class GameManager : NetworkBehaviour
     [ServerRpc]
     private void TrySpawnMoleServerRpc()
     {
-        if (activeMoles.Value < GetMaxMoles())
-        {
-            Debug.Log($"Try to create Moles, activeMoles are:{activeMoles.Value}");
-            List<int> availableIndices = new List<int>();
-            for (int i = 0; i < moles.Count; i++)
-            {
-                if (!moles[i].IsActive.Value)
-                    availableIndices.Add(i);
-                    Debug.Log($"Availiable holes:{i}");
-            }
+        if (activeMoles.Value >= GetMaxMoles()) return;
 
-            if (availableIndices.Count > 0)
-            {
-                int randomIndex = availableIndices[Random.Range(0, availableIndices.Count)];
-                moles[randomIndex].PopUpServerRpc();
-                activeMoles.Value++;
-                Debug.Log($"Moles created, activeMoles are:{activeMoles.Value}");
-            }
+        List<int> availableIndices = new List<int>();
+        for (int i = 0; i < moles.Count; i++)
+        {
+            if (!moles[i].IsActive.Value)
+                availableIndices.Add(i);
+        }
+
+        if (availableIndices.Count > 0)
+        {
+            int randomIndex = availableIndices[Random.Range(0, availableIndices.Count)];
+            moles[randomIndex].PopUpServerRpc();
+        }
+    }
+
+    public void IncreaseActiveMoles()
+    {
+        if (IsServer)
+        {
+            activeMoles.Value++;
+            Debug.Log($"[GameManager] Mole appeared. Active moles: {activeMoles.Value}");
+        }
+    }
+
+    public void DecreaseActiveMoles()
+    {
+        if (IsServer && activeMoles.Value > 0) // 避免 activeMoles 变成负数
+        {
+            activeMoles.Value--;
+            Debug.Log($"[GameManager] Mole disappeared. Active moles: {activeMoles.Value}");
         }
     }
 
@@ -100,17 +128,38 @@ public class GameManager : NetworkBehaviour
     [ServerRpc]
     public void StartGameServerRpc(GameMode mode)
     {
+        Debug.Log($"[Server] StartGameServerRpc called. IsServer: {IsServer}");
         if (!IsGameActive.Value)
         {
             CurrentMode.Value = mode;
             IsGameActive.Value = true;
-            RemainingTime.Value = (mode == GameMode.Easy) ?
-                settings.easyModeDuration : settings.hardModeDuration;
+            RemainingTime.Value = settings.gameDuration;
+
+
+            // 确保初始生成的地鼠符合模式
+            int initialMoles = (mode == GameMode.Easy) ? 3 : 1;
+            for (int i = 0; i < initialMoles; i++)
+            {
+                TrySpawnMoleServerRpc();
+            }
+            foreach (var mole in moles)
+            {
+                mole.SetStayDuration(GetMoleStayDuration());
+            }
 
             StartCoroutine(GameTimer());
             StartCoroutine(MoleSpawnCoroutine());
         }
     }
+
+    // 新增获取停留时间的方法
+    private float GetMoleStayDuration()
+    {
+        return (CurrentMode.Value == GameMode.Easy) ?
+            settings.easyMoleStayDuration :
+            settings.hardMoleStayDuration;
+    }
+
 
     // 玩家分数字典（服务器端存储）
     private Dictionary<ulong, int> playerScores = new Dictionary<ulong, int>();
@@ -136,14 +185,63 @@ public class GameManager : NetworkBehaviour
         }
     }
 
+    // 修改 RestartGameServerRpc 方法
     [ServerRpc]
-    public void RestartGameServerRpc() {
-        /* 重置地鼠和分数逻辑 */
-        /* 重置地鼠和分数逻辑 */
+    public void RestartGameServerRpc(GameMode modeToKeep)
+    {
+        // 1. 重置游戏状态
+        IsGameActive.Value = false;
+        RemainingTime.Value = settings.gameDuration;
+        activeMoles.Value = 0;
+
+        // 2. 清空现有地鼠
+        foreach (var mole in moles)
+        {
+            mole.Hide();
+        }
+
+        // 3. 保持当前模式
+        CurrentMode.Value = modeToKeep;
+
+        // 4. 重新初始化地鼠停留时间
+        foreach (var mole in moles)
+        {
+            mole.SetStayDuration(GetMoleStayDuration());
+        }
+
+        // 5. 重启游戏（延迟一帧避免冲突）
+        StartCoroutine(DelayedRestart());
+    }
+
+
+    private IEnumerator DelayedRestart()
+    {
+        yield return null;
+        StartGameServerRpc(CurrentMode.Value);
+    }
+
+    [ServerRpc]
+    public void SetModeServerRpc(GameMode newMode)
+    {
+        CurrentMode.Value = newMode;
+        Debug.Log($"切换模式到: {newMode}");
+        // 立即更新所有地鼠的停留时间
+        foreach (var mole in moles)
+        {
+            mole.SetStayDuration(GetMoleStayDuration());
+        }
+    }
+
+    [ClientRpc]
+    private void SyncModeClientRpc(GameMode mode)
+    {
+        CurrentMode.Value = mode;
+        // UpdateUI(); // 更新UI显示当前模式
     }
 
     private IEnumerator GameTimer()
     {
+        Debug.Log("[GameManager] Game timer started.");
         while (RemainingTime.Value > 0)
         {
             RemainingTime.Value -= Time.deltaTime;
@@ -155,16 +253,22 @@ public class GameManager : NetworkBehaviour
 
     private IEnumerator MoleSpawnCoroutine()
     {
+        Debug.Log("[GameManager] Mole spawn coroutine started.");
+
         while (IsGameActive.Value)
         {
+            Debug.Log("[GameManager] Trying to spawn mole..");
             TrySpawnMoleServerRpc();
             yield return new WaitForSeconds(Random.Range(1f, 3f));
         }
+        Debug.Log("[GameManager] Mole spawn coroutine ended.");
     }
+
 
     [ClientRpc]
     private void UpdateTimerClientRpc(float time)
     {
+        Debug.Log($"[Client] Updating timer: {Mathf.FloorToInt(time)}s");
         timerText.text = $"Time: {Mathf.FloorToInt(time)}s";
     }
 
