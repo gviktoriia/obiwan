@@ -34,8 +34,8 @@ public class GameManager : NetworkBehaviour
     public GameSettings settings;
 
     // UI引用
-    public TMP_Text timerText;
-    public TMP_Text scoreText;
+    //public TMP_Text timerText;
+    //public TMP_Text scoreText;
 
     public enum GameMode { Easy, Hard }
 
@@ -178,10 +178,12 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void UpdateScoresClientRpc(ulong clientId, int newScore)
     {
-        // 更新本地UI显示
-        if (clientId == NetworkManager.LocalClientId)
+        foreach (var player in NetworkManager.Singleton.ConnectedClients.Values)
         {
-            scoreText.text = $"Your Score: {newScore}";
+            if (player.PlayerObject.GetComponent<PlayerUIController>() != null)
+            {
+                player.PlayerObject.GetComponent<PlayerUIController>().UpdateScore(newScore);
+            }
         }
     }
 
@@ -268,10 +270,14 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void UpdateTimerClientRpc(float time)
     {
-        Debug.Log($"[Client] Updating timer: {Mathf.FloorToInt(time)}s");
-        timerText.text = $"Time: {Mathf.FloorToInt(time)}s";
+        foreach (var player in NetworkManager.Singleton.ConnectedClients.Values)
+        {
+            if (player.PlayerObject.GetComponent<PlayerUIController>() != null)
+            {
+                player.PlayerObject.GetComponent<PlayerUIController>().UpdateTimer(time);
+            }
+        }
     }
-
     public void EndGame()
     {
         IsGameActive.Value = false;
